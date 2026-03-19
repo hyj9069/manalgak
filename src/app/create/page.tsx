@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { supabase } from '@/lib/supabase';
 
 export default function CreatePage() {
   const router = useRouter();
@@ -18,12 +19,21 @@ export default function CreatePage() {
     if (!meetingName.trim()) return;
 
     setIsLoading(true);
-    // TODO: Supabase integration
-    setTimeout(() => {
-      // Mock room ID
-      const mockId = Math.random().toString(36).substring(7);
-      router.push(`/room/${mockId}`);
-    }, 1000);
+    try {
+      const { data, error } = await supabase
+        .from('rooms')
+        .insert([{ title: meetingName }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      router.push(`/room/${data.id}`);
+    } catch (error) {
+      console.error('Error creating room:', error);
+      alert('모임 방 생성 중 오류가 발생했습니다.');
+      setIsLoading(false);
+    }
   };
 
   return (

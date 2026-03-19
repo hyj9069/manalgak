@@ -6,14 +6,14 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white dark:bg-black">
+    <div className="relative min-h-screen bg-white dark:bg-black overflow-hidden">
       {/* Premium Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[120px] animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 blur-[120px] animate-pulse" />
-      <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] rounded-full bg-pink-400/10 blur-[100px]" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[120px] animate-pulse pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 blur-[120px] animate-pulse pointer-events-none" />
+      <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] rounded-full bg-pink-400/10 blur-[100px] pointer-events-none" />
 
       <main className="max-w-6xl mx-auto px-6 pt-32 pb-20 relative z-10">
-        <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-5xl z-50 px-6 py-3 flex justify-between items-center glass rounded-full">
+        <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-5xl z-50 px-6 py-3 flex justify-between items-center glass rounded-full shadow-lg shadow-black/5">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <MapPin className="text-white w-5 h-5" />
@@ -42,12 +42,12 @@ export default function Home() {
               <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-[11px] font-black uppercase tracking-widest mb-8 border border-blue-200/50 dark:border-blue-800/50">
                 Fair Meeting Spot Recommender
               </span>
-              <h1 className="text-5xl md:text-7xl xl:text-8xl font-black tracking-tight leading-[1.1] mb-8">
-                우리 중간에서 <br />
-                <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              <h1 className="text-[3.5rem] md:text-[4.5rem] font-black tracking-tight leading-[1.2] mb-8 space-y-2">
+                <span className="block opacity-90">우리 중간에서</span>
+                <span className="block py-1 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent transform hover:scale-105 transition-transform duration-500 origin-left">
                   &quot;만날각&quot;
                 </span>
-                잡아볼까요?
+                <span className="block opacity-90">잡아볼까요?</span>
               </h1>
               <p className="max-w-2xl mx-auto lg:mx-0 mt-10 text-base md:text-lg opacity-80 leading-relaxed font-medium">
                 모이는 사람들의 출발지에서 가장 합리적인 중간 지점을 찾아드립니다. 
@@ -85,7 +85,7 @@ export default function Home() {
               {/* Floating Effect Background */}
               <div className="absolute inset-0 bg-blue-500/5 rounded-[48px] blur-3xl animate-pulse" />
               <img 
-                src="/hero-map.png" 
+                src="/hero-map.svg" 
                 alt="Manalgak Map Illustration" 
                 className="w-full h-full object-contain relative z-10 drop-shadow-[0_20px_50px_rgba(0,113,227,0.15)] group-hover:scale-105 transition-transform duration-1000"
               />
@@ -93,7 +93,7 @@ export default function Home() {
           </motion.section>
         </div>
 
-        <section id="features" className="grid md:grid-cols-3 gap-8 py-20 border-t border-foreground/5 mt-10">
+        <section id="features" className="grid md:grid-cols-3 gap-8 py-20 border-t border-foreground/5 mt-10 scroll-mt-32">
           <motion.div 
             whileHover={{ y: -8, scale: 1.02 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
