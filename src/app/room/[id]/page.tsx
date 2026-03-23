@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, use } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Users, Share2, Plus, X, Check } from 'lucide-react';
+import { MapPin, Users, Share2, Plus, X, Check, MessageCircleMore, Pencil, ArrowRight, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import KakaoMap from '@/components/KakaoMap';
@@ -22,6 +22,22 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   const [participants, setParticipants] = useState<Participant[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoading, setIsLoading] = useState(true);
+  const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
+
+  const [nearestStation, setNearestStation] = useState<{ name: string; lat: number; lng: number } | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newLocation, setNewLocation] = useState('');
+  const [newCoords, setNewCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [lastConfirmedLocation, setLastConfirmedLocation] = useState('');
+  const [recommendedPlaces, setRecommendedPlaces] = useState<any[]>([]);
+  const [activeCategory, setActiveCategory] = useState('한식');
+  const [isSearchingPlaces, setIsSearchingPlaces] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
 
   // 1. 실시간 데이터 구독 및 초기 데이터 페치
   useEffect(() => {
@@ -66,6 +82,14 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
             location: newP.location,
             coords: { lat: newP.lat, lng: newP.lng }
           }]);
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedP = payload.new;
+          setParticipants(prev => prev.map(p => p.id === updatedP.id ? {
+            id: updatedP.id,
+            name: updatedP.name,
+            location: updatedP.location,
+            coords: { lat: updatedP.lat, lng: updatedP.lng }
+          } : p));
         } else if (payload.eventType === 'DELETE') {
           setParticipants(prev => prev.filter(p => p.id !== payload.old.id));
         }
@@ -77,22 +101,40 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
     };
   }, [roomId]);
 
-  const [nearestStation, setNearestStation] = useState<{ name: string; lat: number; lng: number } | null>(null);
-
   const rawMidpoint = useMemo(() => {
-    if (participants.length === 0) return null;
-    const total = participants.reduce(
-      (acc, p) => ({
-        lat: acc.lat + p.coords.lat,
-        lng: acc.lng + p.coords.lng,
-      }),
-      { lat: 0, lng: 0 }
-    );
+    if (participants.length < 2) return null;
+
+    // 3D Geometric Midpoint Calculation (more accurate for geographic coordinates)
+    let x = 0;
+    let y = 0;
+    let z = 0;
+
+    participants.forEach((p) => {
+      const lat = (p.coords.lat * Math.PI) / 180;
+      const lng = (p.coords.lng * Math.PI) / 180;
+
+      x += Math.cos(lat) * Math.cos(lng);
+      y += Math.cos(lat) * Math.sin(lng);
+      z += Math.sin(lat);
+    });
+
+    const total = participants.length;
+    x /= total;
+    y /= total;
+    z /= total;
+
+    const centralLng = Math.atan2(y, x);
+    const centralHyp = Math.sqrt(x * x + y * y);
+    const centralLat = Math.atan2(z, centralHyp);
+
     return {
-      lat: total.lat / participants.length,
-      lng: total.lng / participants.length,
+      lat: (centralLat * 180) / Math.PI,
+      lng: (centralLng * 180) / Math.PI,
     };
   }, [participants]);
+
+  // 최종 지점은 지하철역이 있으면 역, 없으면 주소 중간지점
+  const finalMidpoint = nearestStation || rawMidpoint;
 
   useEffect(() => {
     if (!rawMidpoint || !window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
@@ -125,14 +167,38 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawMidpoint, nearestStation?.name]);
 
-  // 최종 지점은 지하철역이 있으면 역, 없으면 주소 중간지점
-  const finalMidpoint = nearestStation || rawMidpoint;
-  const [isAdding, setIsAdding] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newLocation, setNewLocation] = useState('');
-  const [newCoords, setNewCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
+  useEffect(() => {
+    if (!finalMidpoint || !window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
+      setRecommendedPlaces([]);
+      return;
+    }
+
+    setIsSearchingPlaces(true);
+    const ps = new window.kakao.maps.services.Places();
+    
+    ps.keywordSearch(activeCategory, (data: any[], status: string) => {
+      if (status === window.kakao.maps.services.Status.OK) {
+        setRecommendedPlaces(data.slice(0, 5).map(place => ({
+          id: place.id,
+          name: place.place_name,
+          category: place.category_name,
+          address: place.road_address_name || place.address_name,
+          phone: place.phone,
+          url: place.place_url,
+          lat: parseFloat(place.y),
+          lng: parseFloat(place.x),
+          distance: place.distance
+        })));
+      } else {
+        setRecommendedPlaces([]);
+      }
+      setIsSearchingPlaces(false);
+    }, {
+      location: new window.kakao.maps.LatLng(finalMidpoint.lat, finalMidpoint.lng),
+      radius: 1000,
+      sort: window.kakao.maps.services.SortBy.ACCURACY
+    });
+  }, [finalMidpoint, activeCategory]);
 
   const handleShare = async () => {
     try {
@@ -144,7 +210,40 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
     }
   };
 
+  const shareToKakao = () => {
+    if (!window.Kakao) return;
+    
+    const name = nearestStation ? nearestStation.name : '중간지점';
+    const description = `우리 여기서 만날각? 최적의 중간 지점: ${name}`;
+    
+    window.Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: '만날각 - 중간 지점 찾기',
+        description: description,
+        imageUrl: 'https://placeholder.supabase.co/storage/v1/object/public/images/hero-map.png', // Replace with real asset if available
+        link: {
+          mobileWebUrl: window.location.href,
+          webUrl: window.location.href,
+        },
+      },
+      buttons: [
+        {
+          title: '중간 지점 확인하기',
+          link: {
+            mobileWebUrl: window.location.href,
+            webUrl: window.location.href,
+          },
+        },
+      ],
+    });
+  };
+
   const searchAddress = () => {
+    if (newCoords && lastConfirmedLocation === newLocation.trim()) {
+      alert('이미 확인된 주소입니다. 다른 주소를 입력하고 다시 검색하시거나, 하단의 참여 완료를 눌러주세요.');
+      return;
+    }
     if (!newLocation.trim() || !window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
       if (!window.kakao?.maps?.services) {
         alert('지도 서비스를 불러오는 중입니다. 잠시만 기다려주세요!');
@@ -157,23 +256,27 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
     const ps = new window.kakao.maps.services.Places();
     
     // 1. 먼저 도로명/지번 주소로 검색 시도
-    geocoder.addressSearch(newLocation, (result: any, status: any) => {
+    geocoder.addressSearch(newLocation, (result: any[], status: string) => {
       if (status === window.kakao.maps.services.Status.OK) {
         setNewCoords({
           lat: parseFloat(result[0].y),
           lng: parseFloat(result[0].x)
         });
-        setNewLocation(result[0].road_address?.address_name || result[0].address_name);
+        const loc = result[0].road_address?.address_name || result[0].address_name;
+        setNewLocation(loc);
+        setLastConfirmedLocation(loc);
         setIsSearching(false);
       } else {
         // 2. 주소 검색 실패 시 장소(키워드) 검색 시도 (예: 동수역)
-        ps.keywordSearch(newLocation, (data: any, psStatus: any) => {
+        ps.keywordSearch(newLocation, (data: any[], psStatus: string) => {
           if (psStatus === window.kakao.maps.services.Status.OK) {
             setNewCoords({
               lat: parseFloat(data[0].y),
               lng: parseFloat(data[0].x)
             });
-            setNewLocation(data[0].place_name + " (" + (data[0].road_address_name || data[0].address_name) + ")");
+            const loc = data[0].place_name + " (" + (data[0].road_address_name || data[0].address_name) + ")";
+            setNewLocation(loc);
+            setLastConfirmedLocation(loc);
           } else {
             alert('주소나 장소를 찾을 수 없습니다. 정확한 이름을 입력해주세요.');
             setNewCoords(null);
@@ -184,39 +287,56 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
     });
   };
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const startEditing = (p: Participant) => {
+    setEditingParticipant(p);
+    setNewName(p.name);
+    setNewLocation(p.location);
+    setNewCoords(p.coords);
+    setLastConfirmedLocation(p.location);
+    setIsAdding(true);
+  };
 
-  const addParticipant = async (e: React.FormEvent) => {
+  const handleModalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || !newLocation.trim() || !newCoords) {
-      if (!newCoords && newLocation.trim()) {
-        alert('주소 검색 버튼을 눌러 정확한 위치를 확인해주세요.');
-      }
-      return;
-    }
-    if (!roomId) return;
+    if (!newName.trim() || !newLocation.trim() || !newCoords || !roomId) return;
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('participants')
-        .insert([{
-          room_id: roomId,
-          name: newName,
-          location: newLocation,
-          lat: newCoords.lat,
-          lng: newCoords.lng
-        }]);
-
-      if (error) throw error;
+      if (editingParticipant) {
+        // Update existing
+        const { error } = await supabase
+          .from('participants')
+          .update({
+            name: newName,
+            location: newLocation,
+            lat: newCoords.lat,
+            lng: newCoords.lng
+          })
+          .eq('id', editingParticipant.id);
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from('participants')
+          .insert([{
+            room_id: roomId,
+            name: newName,
+            location: newLocation,
+            lat: newCoords.lat,
+            lng: newCoords.lng
+          }]);
+        if (error) throw error;
+      }
 
       setNewName('');
       setNewLocation('');
       setNewCoords(null);
+      setLastConfirmedLocation('');
+      setEditingParticipant(null);
       setIsAdding(false);
     } catch (error) {
-      console.error('Error adding participant:', error);
-      alert('참가자 추가 중 오류가 발생했습니다.');
+      console.error('Error saving participant:', error);
+      alert('저장 중 오류가 발생했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -280,12 +400,20 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
                       {p.location}
                     </div>
                   </div>
-                  <button 
-                    onClick={() => removeParticipant(p.id)}
-                    className="opacity-0 group-hover:opacity-40 hover:!opacity-100 p-1 rounded-full hover:bg-red-50 hover:text-red-600 transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => startEditing(p)}
+                        className="opacity-0 group-hover:opacity-40 hover:!opacity-100 p-1 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-all cursor-pointer"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => removeParticipant(p.id)}
+                        className="opacity-0 group-hover:opacity-40 hover:!opacity-100 p-1 rounded-full hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                 </div>
               </motion.div>
             ))}
@@ -349,15 +477,34 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
             title: p.name
           }))}
           midpoint={finalMidpoint}
+          recommendations={showRecommendations ? recommendedPlaces.map(p => ({
+            id: p.id,
+            lat: p.lat,
+            lng: p.lng,
+            title: p.name
+          })) : []}
+          selectedRecommendationId={selectedPlaceId}
+          onRecommendationClick={(id) => {
+            setShowRecommendations(true);
+            setSelectedPlaceId(id);
+            // Scroll to the card
+            setTimeout(() => {
+              const element = document.getElementById(`place-${id}`);
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+              }
+            }, 100);
+          }}
         />
         
+        {/* Top Floating Panel */}
         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-full max-w-sm px-4">
           <AnimatePresence>
             {finalMidpoint && (
               <motion.div 
                 initial={{ y: -50, opacity: 0, scale: 0.9 }}
                 animate={{ y: 0, opacity: 1, scale: 1 }}
-                className="glass-premium p-6 rounded-[32px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] flex flex-col items-center gap-6 text-center border-white/40 dark:border-white/10"
+                className="glass-premium p-6 rounded-[32px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] flex flex-col items-center gap-6 text-center border-white/40 dark:border-white/10 pointer-events-auto"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-blue-500 animate-ping shadow-[0_0_15px_rgba(59,130,246,0.8)]" />
@@ -371,12 +518,48 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
                   >
                     {nearestStation ? nearestStation.name : '중간 지점'}
                   </h3>
-                  <p className="text-sm font-bold opacity-60 text-center">여기서 만날각? 🗺️✨</p>
+                  <p className="text-sm font-bold opacity-60 text-center">여기서 만날각? ✨</p>
                 </div>
 
-                <div className="flex gap-4 w-full">
-                  <div className="flex-1 px-4 py-3 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-black">길찾기</div>
-                  <div className="flex-1 px-4 py-3 rounded-2xl bg-foreground/5 text-xs font-black border border-foreground/5">공유하기</div>
+                <div className="flex flex-col gap-3 w-full">
+                  <button 
+                    onClick={() => {
+                      const name = nearestStation ? nearestStation.name : '중간지점';
+                      const url = `https://map.kakao.com/link/to/${name},${finalMidpoint.lat},${finalMidpoint.lng}`;
+                      window.open(url, '_blank');
+                    }}
+                    className="w-full px-4 py-4 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-black hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    길찾기 (카카오맵)
+                  </button>
+                  
+                  {!showRecommendations && (
+                    <button 
+                      onClick={() => setShowRecommendations(true)}
+                      className="w-full px-4 py-4 rounded-2xl bg-blue-600 text-white text-sm font-black hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+                    >
+                      <Zap className="w-4 h-4" />
+                      맛집 추천받기
+                    </button>
+                  )}
+                  
+                  <div className="flex gap-3 w-full">
+                    <button 
+                      onClick={handleShare}
+                      className="flex-1 px-4 py-3 rounded-2xl bg-foreground/5 text-xs font-black border border-foreground/5 hover:bg-foreground/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      {isCopied ? '복사됨!' : '링크 복사'}
+                    </button>
+                    <button 
+                      onClick={shareToKakao}
+                      className="flex-1 px-4 py-3 rounded-2xl bg-[#FEE500] text-[#3c1e1e] text-xs font-black hover:bg-[#FDD835] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    >
+                      <MessageCircleMore className="w-3.5 h-3.5" />
+                      카카오톡 공유
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -387,8 +570,97 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
                   className="glass px-6 py-4 rounded-[32px] shadow-2xl flex items-center justify-center gap-3 border-white/20 dark:border-white/10 mx-auto w-fit"
                 >
                   <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-sm font-black tracking-tight whitespace-nowrap">참여자를 추가해주세요 🗺️</span>
+                  <span className="text-sm font-black tracking-tight whitespace-nowrap">참여자를 추가해주세요</span>
                 </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Bottom Recommendations Sheet */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-4 w-full md:w-[600px] pointer-events-none">
+          <AnimatePresence>
+            {finalMidpoint && showRecommendations && (
+              <motion.div 
+                initial={{ y: 200, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                className="glass-premium p-5 rounded-[32px] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.2)] flex flex-col gap-4 pointer-events-auto border-white/40 dark:border-white/10"
+              >
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[12px] font-black uppercase tracking-widest text-zinc-500">주변 맛집 추천</span>
+                  <div className="flex gap-1">
+                    {['한식', '중식', '일식', '양식', '카페'].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all ${
+                          activeCategory === cat 
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-4 overflow-x-auto pt-4 pb-4 custom-scrollbar snap-x scroll-smooth">
+                  {isSearchingPlaces ? (
+                    <div className="flex items-center justify-center w-full py-14">
+                      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : recommendedPlaces.length > 0 ? (
+                    recommendedPlaces.map((place) => (
+                      <div 
+                        key={place.id}
+                        id={`place-${place.id}`}
+                        onClick={() => setSelectedPlaceId(place.id)}
+                        className={`flex-shrink-0 w-72 p-5 rounded-[28px] bg-white dark:bg-zinc-900 border-2 transition-all cursor-pointer snap-start relative ${
+                          selectedPlaceId === place.id 
+                            ? 'border-blue-500' 
+                            : 'border-transparent hover:border-blue-500/50 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        {selectedPlaceId === place.id && (
+                          <div className="absolute -top-3 -right-3 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-white dark:border-zinc-900 z-10">
+                            <Check className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-start gap-2">
+                            <h4 className="text-[14px] font-black text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 transition-colors line-clamp-1">
+                              {place.name}
+                            </h4>
+                            <span className="flex-shrink-0 text-[10px] font-black text-blue-600/70 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
+                              {place.distance >= 1000 ? `${(place.distance / 1000).toFixed(1)}km` : `${place.distance}m`}
+                            </span>
+                          </div>
+                          <p className="text-[11px] opacity-50 font-bold line-clamp-2 min-h-[32px]">
+                            {place.address}
+                          </p>
+                          <div 
+                            className="pt-2 flex items-center justify-between group/link"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(place.url, '_blank');
+                            }}
+                          >
+                            <span className="text-[10px] font-black opacity-30 uppercase tracking-tighter hover:opacity-100 transition-opacity">Kakao Maps에서 보기</span>
+                            <div className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover/link:bg-blue-600 transition-colors">
+                              <ArrowRight className="w-3 h-3 text-blue-600 group-hover/link:text-white" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center opacity-40 text-xs font-bold w-full">
+                      검색 결과가 없습니다.
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
@@ -409,7 +681,14 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsAdding(false)}
+              onClick={() => {
+                setIsAdding(false);
+                setEditingParticipant(null);
+                setNewName('');
+                setNewLocation('');
+                setNewCoords(null);
+                setLastConfirmedLocation('');
+              }}
               className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
             <motion.div 
@@ -420,18 +699,25 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
             >
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
-                  <h2 className="text-2xl font-black tracking-tight">출발지 추가</h2>
-                  <p className="text-xs font-bold text-blue-600/60 uppercase tracking-widest">Add Participant</p>
+                  <h2 className="text-2xl font-black tracking-tight">{editingParticipant ? '출발지 수정' : '출발지 추가'}</h2>
+                  <p className="text-xs font-bold text-blue-600/60 uppercase tracking-widest">{editingParticipant ? 'Edit Participant' : 'Add Participant'}</p>
                 </div>
                 <button 
-                  onClick={() => setIsAdding(false)}
+                  onClick={() => {
+                    setIsAdding(false);
+                    setEditingParticipant(null);
+                    setNewName('');
+                    setNewLocation('');
+                    setNewCoords(null);
+                    setLastConfirmedLocation('');
+                  }}
                   className="p-3 hover:bg-foreground/5 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5 opacity-40 hover:opacity-100" />
                 </button>
               </div>
 
-              <form onSubmit={addParticipant} className="space-y-8">
+              <form onSubmit={handleModalSubmit} className="space-y-8">
                 <Input 
                   label="누가 참여하나요?" 
                   placeholder="예: 홍길동" 
@@ -448,6 +734,12 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
                         placeholder="예: 강남역" 
                         value={newLocation}
                         onChange={(e) => setNewLocation(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            searchAddress();
+                          }
+                        }}
                         className="rounded-2xl"
                         required
                       />
@@ -481,9 +773,9 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
                   type="submit" 
                   className="w-full h-16 rounded-2xl text-lg font-black shadow-xl shadow-blue-500/30 transition-all hover:scale-[1.02]" 
                   variant="primary"
-                  disabled={!newCoords}
+                  disabled={!newCoords || isSubmitting}
                 >
-                  참여 완료
+                  {isSubmitting ? (editingParticipant ? '수정 중...' : '참여 중...') : (editingParticipant ? '수정 완료' : '참여 완료')}
                 </Button>
               </form>
             </motion.div>

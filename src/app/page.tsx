@@ -3,35 +3,31 @@
 import { motion } from 'framer-motion';
 import { MapPin, Users, Zap, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen bg-white dark:bg-black overflow-hidden">
-      {/* Premium Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[120px] animate-pulse pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 blur-[120px] animate-pulse pointer-events-none" />
-      <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] rounded-full bg-pink-400/10 blur-[100px] pointer-events-none" />
-
-      <main className="max-w-6xl mx-auto px-6 pt-32 pb-20 relative z-10">
-        <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-5xl z-50 px-6 py-3 flex justify-between items-center glass rounded-full shadow-lg shadow-black/5">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <MapPin className="text-white w-5 h-5" />
-            </div>
-            <span className="text-xl font-bold tracking-tighter">만날각</span>
+    <div className="min-h-screen bg-white dark:bg-black relative overflow-x-hidden">
+      {/* Global Background Blur Elements - Full width & height */}
+      <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-5xl z-50 px-6 py-3 flex justify-between items-center glass rounded-full shadow-lg shadow-black/5">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <MapPin className="text-white w-5 h-5" />
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-semibold opacity-60">
-            <a href="#features" className="hover:opacity-100 transition-opacity">주요 기능</a>
-            <a href="#how-it-works" className="hover:opacity-100 transition-opacity">이용 방법</a>
-          </div>
-          <Link 
-            href="/create"
-            className="bg-blue-600 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
-          >
-            모임 만들기
-          </Link>
-        </nav>
+          <span className="text-xl font-bold tracking-tighter">만날각</span>
+        </div>
+        <div className="hidden md:flex items-center gap-8 text-sm font-semibold opacity-60">
+          <a href="#features" className="hover:opacity-100 transition-opacity">주요 기능</a>
+        </div>
+        <Link 
+          href="/create"
+          className="bg-blue-600 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+        >
+          모임 만들기
+        </Link>
+      </nav>
 
+      <main className="max-w-6xl mx-auto px-6 pt-32 pb-20 relative z-10 transition-all min-h-screen">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 py-12 md:py-24">
           <section className="flex-1 text-center lg:text-left space-y-12">
             <motion.div
@@ -63,14 +59,11 @@ export default function Home() {
             >
               <Link 
                 href="/create"
-                className="group w-full sm:w-auto flex items-center justify-center gap-2 bg-foreground text-background px-8 py-4 rounded-2xl text-lg font-bold hover:opacity-90 transition-all cursor-pointer"
+                className="group w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-2xl text-lg font-bold transition-all gradient-border-animated"
               >
                 지금 바로 시작하기
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <button className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold transition-all gradient-border-animated cursor-pointer">
-                서비스 구경하기
-              </button>
             </motion.div>
           </section>
 
@@ -79,15 +72,17 @@ export default function Home() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-            className="flex-1 relative w-full group"
+            className="flex-1 relative w-full"
           >
-            <div className="relative aspect-square md:aspect-[4/3] lg:aspect-square w-full rounded-[48px] overflow-hidden group">
+            <div className="relative aspect-square md:aspect-[4/3] lg:aspect-square w-full rounded-[48px]">
               {/* Floating Effect Background */}
               <div className="absolute inset-0 bg-blue-500/5 rounded-[48px] blur-3xl animate-pulse" />
-              <img 
-                src="/hero-map.svg" 
-                alt="Manalgak Map Illustration" 
-                className="w-full h-full object-contain relative z-10 drop-shadow-[0_20px_50px_rgba(0,113,227,0.15)] group-hover:scale-105 transition-transform duration-1000"
+              <Image 
+                src="/hero-img.png" 
+                alt="Manalgak Map" 
+                fill
+                className="object-contain relative z-10 drop-shadow-[0_20px_50px_rgba(0,113,227,0.15)]"
+                priority
               />
             </div>
           </motion.section>
@@ -95,9 +90,9 @@ export default function Home() {
 
         <section id="features" className="grid md:grid-cols-3 gap-8 py-20 border-t border-foreground/5 mt-10 scroll-mt-32">
           <motion.div 
-            whileHover={{ y: -8, scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="p-8 rounded-[32px] glass border-2 hover:border-blue-500/30 transition-all cursor-pointer group relative overflow-hidden"
+            whileHover={{ y: -8, scale: 1.01 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="p-8 rounded-[32px] glass border-2 hover:border-blue-500/40 group relative overflow-hidden cursor-default"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 relative z-10">
@@ -108,9 +103,9 @@ export default function Home() {
           </motion.div>
 
           <motion.div 
-            whileHover={{ y: -8, scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="p-8 rounded-[32px] glass border-2 hover:border-purple-500/30 transition-all cursor-pointer group relative overflow-hidden"
+            whileHover={{ y: -8, scale: 1.01 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="p-8 rounded-[32px] glass border-2 hover:border-purple-500/40 group relative overflow-hidden cursor-default"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="w-14 h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-6 relative z-10">
@@ -121,9 +116,9 @@ export default function Home() {
           </motion.div>
 
           <motion.div 
-            whileHover={{ y: -8, scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="p-8 rounded-[32px] glass border-2 hover:border-orange-500/30 transition-all cursor-pointer group relative overflow-hidden"
+            whileHover={{ y: -8, scale: 1.01 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="p-8 rounded-[32px] glass border-2 hover:border-orange-500/40 group relative overflow-hidden cursor-default"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="w-14 h-14 bg-orange-500/10 rounded-2xl flex items-center justify-center mb-6 relative z-10">
@@ -133,11 +128,11 @@ export default function Home() {
             <p className="opacity-60 leading-relaxed font-semibold text-[15px] relative z-10">중간 지점 근처의 지하철역과 인기 있는 맛집 정보를 한눈에 보여드려요.</p>
           </motion.div>
         </section>
-      </main>
 
-      <footer className="py-10 text-center text-sm opacity-40">
-        © 2024 ManalGak. Built with Next.js & Tailwind CSS.
-      </footer>
+        <footer className="py-10 text-center text-sm opacity-40 relative z-10">
+          © 2024 ManalGak. Built with Next.js & Tailwind CSS.
+        </footer>
+      </main>
     </div>
   );
 }
