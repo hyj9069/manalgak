@@ -205,17 +205,24 @@ export default function KakaoMap({
       overlaysRef.current.push(overlay);
     }
 
-    const totalPoints = markers.length + recommendations.length + (midpoint ? 1 : 0);
-    if (totalPoints > 1) {
+    const totalPOIs = markers.length + (midpoint ? 1 : 0) + recommendations.length;
+    
+    // Only use setBounds if we have multiple participants or a mix of points that actually need framing
+    // If we have 1 participant and they are the midpoint, setBounds can zoom out excessively.
+    if (markers.length > 1 || (markers.length === 1 && recommendations.length > 0)) {
+      console.log('[KakaoMap] Fitting bounds for multiple distinct points...', { markers: markers.length, recos: recommendations.length });
       map.setBounds(bounds);
-    } else if (totalPoints === 1) {
+    } else if (totalPOIs >= 1) {
       const { maps } = window.kakao;
       let targetPos: kakao.maps.LatLng | null = null;
+      
+      // Prefer midpoint, then participant, then recommendation
       if (midpoint) targetPos = new maps.LatLng(midpoint.lat, midpoint.lng);
-      else if (markers.length === 1) targetPos = new maps.LatLng(markers[0].lat, markers[0].lng);
-      else if (recommendations.length === 1) targetPos = new maps.LatLng(recommendations[0].lat, recommendations[0].lng);
+      else if (markers.length > 0) targetPos = new maps.LatLng(markers[0].lat, markers[0].lng);
+      else if (recommendations.length > 0) targetPos = new maps.LatLng(recommendations[0].lat, recommendations[0].lng);
       
       if (targetPos) {
+        console.log('[KakaoMap] Single focus point detected, centering with level:', level);
         map.setCenter(targetPos);
         if (level) map.setLevel(level);
       }

@@ -1161,7 +1161,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
         </AnimatePresence>
 
         {/* Floating Toggle Button For Mobile Map View */}
-        <div className="absolute bottom-10 right-10 md:hidden z-20 flex flex-col gap-3">
+        <div className="absolute bottom-15 right-5 md:hidden z-20 flex flex-col gap-3">
           <Button 
             className="w-14 h-14 rounded-full shadow-2xl p-0" 
             variant="primary" 
