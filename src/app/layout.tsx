@@ -12,12 +12,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import KakaoScript from "@/components/KakaoScript";
+import { Viewport } from "next";
+
 export const metadata: Metadata = {
   title: "만날각",
   description: "중간 지점 계산기",
 };
 
-import KakaoScript from "@/components/KakaoScript";
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export default function RootLayout({
   children,

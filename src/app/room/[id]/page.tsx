@@ -96,6 +96,16 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [hasActivatedRecommendations, setHasActivatedRecommendations] = useState(false);
+  const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
+
+  // Responsive state
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
 
 
@@ -249,42 +259,47 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   // 최종 지점은 지하철역이 있으면 역, 없으면 주소 중간지점
   const finalMidpoint = nearestStation || rawMidpoint;
 
-  // 중간 지점 발견 시 사이드바 자동 접기
+  // 중간 지점 발견 시 사이드바 자동 접기 (최초 1회만)
   useEffect(() => {
-    if (finalMidpoint && !isSidebarCollapsed && typeof window !== 'undefined' && window.innerWidth >= 768) {
+    if (finalMidpoint && !hasAutoCollapsed && !isSidebarCollapsed && typeof window !== 'undefined' && window.innerWidth >= 768) {
       setIsSidebarCollapsed(true);
+      setHasAutoCollapsed(true);
     }
-  }, [finalMidpoint, isSidebarCollapsed]);
+  }, [finalMidpoint, hasAutoCollapsed, isSidebarCollapsed]);
 
+  // 지하철역 검색 (중간지점 기준)
   useEffect(() => {
-    if (!rawMidpoint || !window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
-      if (rawMidpoint === null && nearestStation !== null) {
-        setNearestStation(null);
-      }
-      return;
-    }
+    if (!rawMidpoint || !window.kakao || !window.kakao.maps) return;
 
-    const ps = new window.kakao.maps.services.Places();
-    ps.categorySearch('SW8', (data: kakao.maps.services.KakaoPlace[], status: kakao.maps.services.Status) => {
-      if (status === window.kakao.maps.services.Status.OK && data.length > 0) {
-        const station = data[0];
-        // Only update if name changed to prevent render loops
-        if (nearestStation?.name !== station.place_name) {
-          setNearestStation({
-            name: station.place_name,
-            lat: parseFloat(station.y),
-            lng: parseFloat(station.x)
-          });
+    window.kakao.maps.load(() => {
+      if (!window.kakao.maps.services) return;
+
+      const ps = new window.kakao.maps.services.Places();
+      const options = {
+        location: new window.kakao.maps.LatLng(rawMidpoint.lat, rawMidpoint.lng),
+        radius: 5000, // 모바일 안정성을 위해 5km로 확장
+        sort: window.kakao.maps.services.SortBy.DISTANCE
+      };
+
+      ps.categorySearch('SW8', (data: kakao.maps.services.KakaoPlace[], status: kakao.maps.services.Status) => {
+        if (status === window.kakao.maps.services.Status.OK && data.length > 0) {
+          const station = data[0];
+          // "역" 중복 방지를 위해 이름 정제 (예: "흑석역(9호선)" -> "흑석")
+          const cleanName = station.place_name.replace(/\s*역(\([^)]*\))?$/, '');
+          
+          if (nearestStation?.name !== cleanName) {
+            setNearestStation({
+              name: cleanName,
+              lat: parseFloat(station.y),
+              lng: parseFloat(station.x)
+            });
+          }
+        } else if (nearestStation !== null) {
+          setNearestStation(null);
         }
-      } else if (nearestStation !== null) {
-        setNearestStation(null);
-      }
-    }, {
-      location: new window.kakao.maps.LatLng(rawMidpoint.lat, rawMidpoint.lng),
-      radius: 2000,
-      sort: window.kakao.maps.services.SortBy.DISTANCE
+      }, options);
     });
-  }, [rawMidpoint, nearestStation?.name, nearestStation]);
+  }, [rawMidpoint]);
 
   // 맛집 추천 기능 복구 및 강화
   useEffect(() => {
@@ -636,15 +651,16 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
       <motion.button 
         initial={false}
         animate={{ 
-          x: isSidebarCollapsed ? 0 : 384,
-          opacity: isSidebarCollapsed ? 1 : (typeof window !== 'undefined' && window.innerWidth < 768 ? 0 : 1)
+          x: isSidebarCollapsed ? 0 : (isMobile ? 0 : 384),
+          opacity: isSidebarCollapsed ? 1 : (isMobile ? 0 : 1),
+          pointerEvents: isSidebarCollapsed ? 'auto' : (isMobile ? 'none' : 'auto')
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         aria-label={isSidebarCollapsed ? "참여자 목록 열기" : "참여자 목록 닫기"}
         aria-expanded={!isSidebarCollapsed}
         aria-controls="participant-sidebar"
-        className="fixed top-1/2 -translate-y-1/2 z-[60] bg-zinc-950 shadow-2xl border border-white/10 w-8 h-12 hidden md:flex items-center justify-center rounded-r-2xl left-0 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none"
+        className="fixed top-1/2 -translate-y-1/2 z-[100] bg-zinc-950 shadow-2xl border border-white/10 w-8 h-12 flex items-center justify-center rounded-r-2xl left-0 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none"
       >
         <motion.div
           animate={{ rotate: isSidebarCollapsed ? 0 : 180 }}
@@ -662,14 +678,14 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
         aria-label="참여자 목록"
         initial={false}
         animate={{ 
-          x: isSidebarCollapsed ? (typeof window !== 'undefined' && window.innerWidth < 768 ? '-100%' : -384) : 0,
-          marginRight: isSidebarCollapsed ? (typeof window !== 'undefined' && window.innerWidth < 768 ? 0 : -384) : 0,
+          x: isSidebarCollapsed ? (isMobile ? '-100%' : -384) : 0,
+          marginRight: isSidebarCollapsed ? (isMobile ? 0 : -384) : 0,
           opacity: isSidebarCollapsed ? 0 : 1,
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className={`
           flex flex-col bg-zinc-950 text-white
-          transition-colors duration-500 h-full overflow-hidden z-[70] fixed md:relative
+          transition-colors duration-500 h-full overflow-hidden z-[90] fixed md:relative top-0 left-0
           ${isSidebarCollapsed ? 'pointer-events-none' : 'pointer-events-auto'}
           w-full md:w-[384px]
           flex-shrink-0
@@ -952,7 +968,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
       </motion.aside>
 
       {/* Map Content */}
-      <main className={`flex-1 relative bg-blue-50 dark:bg-zinc-900 overflow-hidden ${!showMapMobile ? 'hidden md:block' : 'block'}`}>
+      <main className={`flex-1 relative bg-blue-50 dark:bg-zinc-900 overflow-hidden ${(isSidebarCollapsed || showMapMobile || !isMobile) ? 'block' : 'hidden'}`}>
         <KakaoMap 
           className="absolute inset-0"
           center={finalMidpoint || { lat: 37.4979, lng: 127.0276 }} 
