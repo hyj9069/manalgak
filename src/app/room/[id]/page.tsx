@@ -841,25 +841,27 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
         />
         
         {/* Top Floating Midpoint Banner */}
-        <div className="absolute top-6 left-1/2 -track-x-1/2 z-10 pointer-events-none w-full max-w-md px-4 flex justify-center translate-x-[-50%]">
+        <div className="absolute top-6 left-1/2 z-30 pointer-events-none w-full max-w-md px-4 flex justify-center -translate-x-1/2">
           <AnimatePresence>
             {finalMidpoint && (
               <motion.div 
                 initial={{ y: -50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="glass-premium rounded-full px-6 py-3 shadow-2xl border border-white/20 dark:border-white/10 pointer-events-auto flex items-center gap-4"
+                className="glass-premium rounded-[24px] md:rounded-full px-5 py-3.5 md:px-6 md:py-3 shadow-2xl border border-white/20 dark:border-white/10 pointer-events-auto flex flex-col md:flex-row items-center gap-2 md:gap-4 max-w-[90vw] md:max-w-none"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                  <span className="text-sm font-black tracking-tight">{nearestStation?.name || '중간 지점 발견!'}</span>
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
+                  <span className="text-sm font-black tracking-tight break-keep text-center md:text-left">
+                    {nearestStation?.name ? `${nearestStation.name}역 부근` : '중간 지점 발견!'}
+                  </span>
                 </div>
-                <div className="w-[1px] h-4 bg-foreground/10" />
+                <div className="hidden md:block w-[1px] h-4 bg-foreground/10" />
                 <button 
                   onClick={() => {
                     setShowRecommendations(true);
                     setHasActivatedRecommendations(true);
                   }}
-                  className="text-xs font-black text-blue-600 dark:text-blue-400 hover:opacity-70 transition-opacity"
+                  className="text-[11px] md:text-xs font-black text-blue-600 dark:text-blue-400 hover:opacity-70 transition-opacity break-keep"
                 >
                   주변 맛집/카페 보기 ✨
                 </button>
