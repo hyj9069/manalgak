@@ -16,7 +16,8 @@ import {
   Zap,
   MessageCircleMore,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -635,7 +636,8 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
       <motion.button 
         initial={false}
         animate={{ 
-          x: isSidebarCollapsed ? 0 : 384
+          x: isSidebarCollapsed ? 0 : 384,
+          opacity: isSidebarCollapsed ? 1 : (typeof window !== 'undefined' && window.innerWidth < 768 ? 0 : 1)
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -660,15 +662,16 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
         aria-label="참여자 목록"
         initial={false}
         animate={{ 
-          x: isSidebarCollapsed ? -384 : 0,
-          marginRight: isSidebarCollapsed ? -384 : 0,
+          x: isSidebarCollapsed ? (typeof window !== 'undefined' && window.innerWidth < 768 ? '-100%' : -384) : 0,
+          marginRight: isSidebarCollapsed ? (typeof window !== 'undefined' && window.innerWidth < 768 ? 0 : -384) : 0,
           opacity: isSidebarCollapsed ? 0 : 1,
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className={`
           flex flex-col bg-zinc-950 text-white
-          transition-colors duration-500 h-full overflow-hidden z-[50] relative
-          ${!showMapMobile ? 'flex w-full md:w-[384px]' : 'hidden md:flex md:w-[384px]'}
+          transition-colors duration-500 h-full overflow-hidden z-[70] fixed md:relative
+          ${isSidebarCollapsed ? 'pointer-events-none' : 'pointer-events-auto'}
+          w-full md:w-[384px]
           flex-shrink-0
         `}
       >
@@ -688,108 +691,219 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
               <span className="text-[11px] font-bold text-white/60 uppercase tracking-widest">{participants.length}명이 참여중</span>
             </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center border border-white/5">
-            <Users className="w-5 h-5 text-white/60" aria-hidden="true" />
+          <div className="flex items-center gap-2">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center border border-white/5">
+              <Users className="w-5 h-5 text-white/60" aria-hidden="true" />
+            </div>
+            {/* Mobile Close Button */}
+            {!isSidebarCollapsed && (
+              <button 
+                onClick={() => setIsSidebarCollapsed(true)}
+                className="md:hidden w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center border border-white/5 hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-6 h-6 text-white/60" />
+              </button>
+            )}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-4 premium-scrollbar">
-          <div className="space-y-3">
-            {participants.map((p) => (
-              <motion.div 
-                layout
-                key={p.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="group relative"
-              >
-                <div 
-                  className={`
-                    p-5 rounded-[28px] border transition-all duration-300
-                    ${p.id === myParticipantId 
-                      ? 'bg-blue-900/20 border-blue-800/50' 
-                      : 'bg-zinc-900/40 border-white/5 hover:border-white/10'}
-                  `}
+          {!isAdding ? (
+            <div className="space-y-3">
+              {participants.map((p) => (
+                <motion.div 
+                  layout
+                  key={p.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="group relative"
                 >
-                  <div >
-                    <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 flex-shrink-0 rounded-2xl bg-zinc-900 shadow-sm border border-white/5 flex items-center justify-center font-black text-blue-400 overflow-hidden relative group-hover:scale-105 transition-transform">
-                        {p.name[0]}
-                        {onlineParticipants.includes(p.id) && (
-                          <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500 border-2 border-zinc-900" />
-                        )}
-                      </div>
-                      <div className="space-y-0.5 min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-3 pr-[70px]">
-                          <p className="font-black text-[15px] tracking-tight truncate text-white">{p.name}</p>
-                          {p.id === myParticipantId && (
-                            <span className="text-[9px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-tighter">나</span>
+                  <div 
+                    className={`
+                      p-5 rounded-[28px] border transition-all duration-300
+                      ${p.id === myParticipantId 
+                        ? 'bg-blue-900/20 border-blue-800/50' 
+                        : 'bg-zinc-900/40 border-white/5 hover:border-white/10'}
+                    `}
+                  >
+                    <div >
+                      <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 flex-shrink-0 rounded-2xl bg-zinc-900 shadow-sm border border-white/5 flex items-center justify-center font-black text-blue-400 overflow-hidden relative group-hover:scale-105 transition-transform">
+                          {p.name[0]}
+                          {onlineParticipants.includes(p.id) && (
+                            <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500 border-2 border-zinc-900" />
                           )}
                         </div>
-                        <p className="text-[11px] font-medium text-white/60 truncate">{p.location}</p>
+                        <div className="space-y-0.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-3 pr-[70px]">
+                            <p className="font-black text-[15px] tracking-tight truncate text-white">{p.name}</p>
+                            {p.id === myParticipantId && (
+                              <span className="text-[9px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-tighter">나</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] font-medium text-white/60 truncate">{p.location}</p>
+                        </div>
                       </div>
+                      {p.id === myParticipantId && (
+                        <div className="absolute top-4 right-[20px] flex gap-1 z-10">
+                          <button 
+                            onClick={() => {
+                              setEditingParticipant(p);
+                              setNewName(p.name);
+                              setNewLocation(p.location);
+                              setNewCoords(p.coords);
+                              setLastConfirmedLocation(p.location);
+                              setIsAdding(true);
+                            }}
+                            aria-label={`${p.name} 정보 수정`}
+                            className="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all bg-zinc-900/80 backdrop-blur-sm shadow-sm"
+                          >
+                            <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                          <button 
+                            onClick={() => removeParticipant(p.id)}
+                            aria-label={`${p.name} 삭제`}
+                            className="p-2 rounded-xl text-white/60 hover:text-red-400 hover:bg-red-900/20 transition-all bg-zinc-900/80 backdrop-blur-sm shadow-sm"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    {p.id === myParticipantId && (
-                      <div className="absolute top-4 right-[20px] flex gap-1 z-10">
-                        <button 
-                          onClick={() => {
-                            setEditingParticipant(p);
-                            setNewName(p.name);
-                            setNewLocation(p.location);
-                            setNewCoords(p.coords);
-                            setLastConfirmedLocation(p.location);
-                            setIsAdding(true);
-                          }}
-                          aria-label={`${p.name} 정보 수정`}
-                          className="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all bg-zinc-900/80 backdrop-blur-sm shadow-sm"
-                        >
-                          <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
-                        <button 
-                          onClick={() => removeParticipant(p.id)}
-                          aria-label={`${p.name} 삭제`}
-                          className="p-2 rounded-xl text-white/60 hover:text-red-400 hover:bg-red-900/20 transition-all bg-zinc-900/80 backdrop-blur-sm shadow-sm"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
-                      </div>
-                    )}
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
 
-          <Button 
-            variant="outline" 
-            className="w-full rounded-[28px] border-dashed border-2 border-white/10 hover:border-blue-500/50 hover:bg-blue-900/10 transition-all group mt-6"
-            onClick={() => setIsAdding(true)}
-            aria-label="참여자 추가"
-          >
-            <div className="flex flex-col items-center gap-1">
-              <Plus className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" aria-hidden="true" />
-              <span className="text-sm font-bold text-white/60">나도 참여하기</span>
-            </div>
-          </Button>
-
-          {participants.length < 2 && (
-            <div className="mt-8 p-6 rounded-[32px] bg-zinc-900/50 border border-white/5 text-center space-y-4">
-              <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center mx-auto shadow-sm">
-                <Share2 className="w-5 h-5 text-blue-400" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-[13px] font-black tracking-tight text-white/90">친구들에게 공유해보세요!</p>
-                <p className="text-[11px] font-bold text-white/60">링크를 공유하면 친구들도 <br/>직접 출발지를 입력할 수 있어요.</p>
-              </div>
               <Button 
-                variant="primary" 
-                size="sm" 
-                className="w-full rounded-xl text-xs font-black shadow-md shadow-blue-500/10"
-                onClick={handleShare}
+                variant="outline" 
+                className="w-full rounded-[28px] border-dashed border-2 border-white/10 hover:border-blue-500/50 hover:bg-blue-900/10 transition-all group mt-6"
+                onClick={() => setIsAdding(true)}
+                aria-label="참여자 추가"
               >
-                {isCopied ? '복사 완료!' : '참여 링크 복사하기'}
+                <div className="flex flex-col items-center gap-1">
+                  <Plus className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" aria-hidden="true" />
+                  <span className="text-sm font-bold text-white/60">나도 참여하기</span>
+                </div>
               </Button>
+
+              {participants.length < 2 && (
+                <div className="mt-8 p-6 rounded-[32px] bg-zinc-900/50 border border-white/5 text-center space-y-4">
+                  <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                    <Share2 className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[13px] font-black tracking-tight text-white/90">친구들에게 공유해보세요!</p>
+                    <p className="text-[11px] font-bold text-white/60">링크를 공유하면 친구들도 <br/>직접 출발지를 입력할 수 있어요.</p>
+                  </div>
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    className="w-full rounded-xl text-xs font-black shadow-md shadow-blue-500/10"
+                    onClick={handleShare}
+                  >
+                    {isCopied ? '복사 완료!' : '참여 링크 복사하기'}
+                  </Button>
+                </div>
+              )}
             </div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-8 p-2"
+            >
+              <div className="flex justify-between items-start">
+                <div className="space-y-1.5">
+                  <h2 className="text-2xl font-black tracking-tight text-white">{editingParticipant ? '정보 수정' : '참여자 추가'}</h2>
+                  <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Enter departure location</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setIsAdding(false);
+                    setEditingParticipant(null);
+                  }}
+                  className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center hover:bg-zinc-800 transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5 opacity-40" />
+                </button>
+              </div>
+
+              <form onSubmit={handleModalSubmit} className="space-y-8">
+                <Input 
+                  label="이름" 
+                  placeholder="본인의 이름을 입력하세요" 
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="rounded-2xl h-14 text-sm font-bold bg-zinc-900 border-white/5 text-white"
+                  required
+                />
+                <div className="space-y-4">
+                  <Input 
+                    label="출발지" 
+                    placeholder="도로명 주소 또는 키워드 (예: 강남역)" 
+                    value={newLocation}
+                    onChange={(e) => setNewLocation(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchAddress())}
+                    className="rounded-2xl h-14 text-sm font-bold bg-zinc-900 border-white/5 text-white"
+                    required
+                  />
+                  <div className="flex gap-3">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="flex-1 h-14 rounded-2xl border-white/10 font-black flex items-center justify-center gap-2 group text-white/60"
+                      onClick={getCurrentLocation}
+                      disabled={isSearching}
+                    >
+                      <Zap className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                      <span>{isSearching ? '...' : '현위치'}</span>
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="flex-1 h-14 rounded-2xl border-white/10 font-black text-white/60"
+                      onClick={searchAddress}
+                      disabled={isSearching}
+                    >
+                      {isSearching ? '...' : '주소 검색'}
+                    </Button>
+                  </div>
+                  <AnimatePresence>
+                    {newCoords && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-4 rounded-2xl bg-blue-900/20 border border-blue-800/50"
+                      >
+                        <p className="text-[13px] text-blue-300 font-bold flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          주소가 확인되었습니다! 📍
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full h-16 rounded-2xl text-lg font-black shadow-xl shadow-blue-500/30 transition-all hover:scale-[1.02]" 
+                  variant="primary"
+                  disabled={!newCoords || isSubmitting}
+                >
+                  {isSubmitting ? (editingParticipant ? '수정 중...' : '참여 중...') : (editingParticipant ? '수정 완료' : '참여 완료')}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  className="w-full h-14 rounded-2xl text-sm font-bold border-white/5 text-white/40" 
+                  onClick={() => {
+                    setIsAdding(false);
+                    setEditingParticipant(null);
+                  }}
+                >
+                  취소
+                </Button>
+              </form>
+            </motion.div>
           )}
         </div>
 
@@ -798,7 +912,10 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
             variant="primary" 
             className="flex-1 h-14 rounded-2xl shadow-lg shadow-blue-500/20 font-bold"
             disabled={participants.length < 2}
-            onClick={() => setShowMapMobile(true)}
+            onClick={() => {
+              setShowMapMobile(true);
+              setIsSidebarCollapsed(true);
+            }}
           >
             {participants.length < 2 ? '참여자를 추가해주세요' : '중간 지점 확인'}
           </Button>
@@ -827,7 +944,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
         <KakaoMap 
           className="absolute inset-0"
           center={finalMidpoint || { lat: 37.4979, lng: 127.0276 }} 
-          level={4}
+          level={3}
           markers={participants.map(p => ({
             lat: p.coords.lat,
             lng: p.coords.lng,
@@ -841,7 +958,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
         />
         
         {/* Top Floating Midpoint Banner */}
-        <div className="absolute top-6 left-1/2 z-30 pointer-events-none w-full max-w-md px-4 flex justify-center -translate-x-1/2">
+        <div className="absolute top-16 left-1/2 z-30 pointer-events-none w-full max-w-md px-4 flex justify-center -translate-x-1/2">
           <AnimatePresence>
             {finalMidpoint && (
               <motion.div 
@@ -851,7 +968,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
               >
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
-                  <span className="text-sm font-black tracking-tight break-keep text-center md:text-left">
+                  <span className="text-[15px] font-black tracking-tight break-keep text-center md:text-left">
                     {nearestStation?.name ? `${nearestStation.name}역 부근` : '중간 지점 발견!'}
                   </span>
                 </div>
@@ -861,9 +978,9 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
                     setShowRecommendations(true);
                     setHasActivatedRecommendations(true);
                   }}
-                  className="text-[11px] md:text-xs font-black text-blue-600 dark:text-blue-400 hover:opacity-70 transition-opacity break-keep"
+                  className="text-[13px] md:text-sm font-black text-blue-600 dark:text-blue-400 hover:opacity-70 transition-opacity break-keep"
                 >
-                  주변 맛집/카페 보기 ✨
+                  주변 맛집 보기 ✨
                 </button>
               </motion.div>
             )}
@@ -872,7 +989,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
 
         {/* Bottom Recommendation Sheet */}
         <AnimatePresence>
-          {finalMidpoint && (
+          {finalMidpoint && hasActivatedRecommendations && (
             <motion.div
               id="recommendation-sheet"
               initial={{ y: "100%" }}
@@ -1031,118 +1148,19 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
           )}
         </AnimatePresence>
 
-        {/* Floating Add Button For Mobile */}
-        <div className="absolute bottom-10 right-10 md:hidden z-20">
-          <Button className="w-14 h-14 rounded-full shadow-2xl p-0" variant="primary" onClick={() => setIsAdding(true)}>
-            <Plus className="w-6 h-6" />
+        {/* Floating Toggle Button For Mobile Map View */}
+        <div className="absolute bottom-10 right-10 md:hidden z-20 flex flex-col gap-3">
+          <Button 
+            className="w-14 h-14 rounded-full shadow-2xl p-0" 
+            variant="primary" 
+            onClick={() => setIsSidebarCollapsed(false)}
+          >
+            <Users className="w-6 h-6" />
           </Button>
         </div>
       </main>
 
-      {/* Add Modal */}
-      <AnimatePresence>
-        {isAdding && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center px-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                setIsAdding(false);
-                setEditingParticipant(null);
-                setNewName('');
-                setNewLocation('');
-                setNewCoords(null);
-                setLastConfirmedLocation('');
-              }}
-            />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md bg-white dark:bg-zinc-950 rounded-[40px] p-10 shadow-2xl border border-white/10 space-y-10"
-            >
-              <div className="flex justify-between items-start">
-                <div className="space-y-1.5">
-                  <h2 className="text-3xl font-black tracking-tight">{editingParticipant ? '정보 수정' : '참여자 추가'}</h2>
-                  <p className="text-xs font-black text-blue-500 uppercase tracking-widest">Enter departure location</p>
-                </div>
-                <button 
-                  onClick={() => setIsAdding(false)}
-                  className="w-10 h-10 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  <X className="w-5 h-5 opacity-40" />
-                </button>
-              </div>
-
-              <form onSubmit={handleModalSubmit} className="space-y-8">
-                <Input 
-                  label="이름" 
-                  placeholder="본인의 이름을 입력하세요" 
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="rounded-2xl h-14 text-sm font-bold"
-                  required
-                />
-                <div className="space-y-4">
-                  <Input 
-                    label="출발지" 
-                    placeholder="도로명 주소 또는 키워드 (예: 강남역)" 
-                    value={newLocation}
-                    onChange={(e) => setNewLocation(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchAddress())}
-                    className="rounded-2xl h-14 text-sm font-bold"
-                    required
-                  />
-                  <div className="flex gap-3">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="flex-1 h-14 rounded-2xl border-2 font-black flex items-center justify-center gap-2 group"
-                      onClick={getCurrentLocation}
-                      disabled={isSearching}
-                    >
-                      <Zap className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                      <span>{isSearching ? '...' : '현위치'}</span>
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="flex-1 h-14 rounded-2xl border-2 font-black"
-                      onClick={searchAddress}
-                      disabled={isSearching}
-                    >
-                      {isSearching ? '...' : '주소 검색'}
-                    </Button>
-                  </div>
-                  <AnimatePresence>
-                    {newCoords && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200/50 dark:border-blue-800/50"
-                      >
-                        <p className="text-[13px] text-blue-700 dark:text-blue-300 font-bold flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          주소가 확인되었습니다! 📍
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full h-16 rounded-2xl text-lg font-black shadow-xl shadow-blue-500/30 transition-all hover:scale-[1.02]" 
-                  variant="primary"
-                  disabled={!newCoords || isSubmitting}
-                >
-                  {isSubmitting ? (editingParticipant ? '수정 중...' : '참여 중...') : (editingParticipant ? '수정 완료' : '참여 완료')}
-                </Button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Modal removed - integrated into sidebar */}
     </div>
   );
 }
