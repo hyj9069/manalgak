@@ -121,9 +121,8 @@ export default function KakaoMap({
     overlaysRef.current = [];
     recoMarkersRef.current = [];
 
-    const { maps } = window.kakao;
+    const maps = window.kakao.maps;
     const bounds = new maps.LatLngBounds();
-    let hasMarkers = false;
 
     // Participant markers
     markers.forEach((markerPos) => {
@@ -135,7 +134,6 @@ export default function KakaoMap({
       marker.setMap(map);
       markersRef.current.push(marker);
       bounds.extend(position);
-      hasMarkers = true;
     });
 
     // Recommendation markers
@@ -154,7 +152,6 @@ export default function KakaoMap({
 
       recoMarkersRef.current.push(marker);
       bounds.extend(position);
-      hasMarkers = true;
     });
 
     if (midpoint) {
@@ -177,7 +174,6 @@ export default function KakaoMap({
       marker.setMap(map);
       markersRef.current.push(marker);
       bounds.extend(position);
-      hasMarkers = true;
 
       const content = `
         <div class="custom-overlay-premium" style="
@@ -209,12 +205,22 @@ export default function KakaoMap({
       overlaysRef.current.push(overlay);
     }
 
-    if (hasMarkers && (markers.length + recommendations.length) > 0) {
-      // If we only have 1 recommendation and no participants, center on it.
-      // Otherwise, fit all.
+    const totalPoints = markers.length + recommendations.length + (midpoint ? 1 : 0);
+    if (totalPoints > 1) {
       map.setBounds(bounds);
+    } else if (totalPoints === 1) {
+      const { maps } = window.kakao;
+      let targetPos: kakao.maps.LatLng | null = null;
+      if (midpoint) targetPos = new maps.LatLng(midpoint.lat, midpoint.lng);
+      else if (markers.length === 1) targetPos = new maps.LatLng(markers[0].lat, markers[0].lng);
+      else if (recommendations.length === 1) targetPos = new maps.LatLng(recommendations[0].lat, recommendations[0].lng);
+      
+      if (targetPos) {
+        map.setCenter(targetPos);
+        if (level) map.setLevel(level);
+      }
     }
-  }, [map, markers, midpoint, recommendations, onRecommendationClick]);
+  }, [map, markers, midpoint, recommendations, onRecommendationClick, level]);
 
   // Handle zooming to selected recommendation and showing its label
   useEffect(() => {

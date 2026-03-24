@@ -632,7 +632,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   if (isLoading) return <div className="h-screen w-full flex items-center justify-center bg-zinc-50 dark:bg-black"><div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
-    <div className="flex flex-col h-screen bg-zinc-50 dark:bg-black overflow-hidden md:flex-row relative">
+    <div className="flex flex-col h-[100dvh] bg-zinc-50 dark:bg-black overflow-hidden md:flex-row relative overscroll-none">
       <motion.button 
         initial={false}
         animate={{ 
@@ -708,8 +708,15 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
         </div>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-4 premium-scrollbar">
-          {!isAdding ? (
-            <div className="space-y-3">
+          <AnimatePresence mode="wait">
+            {!isAdding ? (
+              <motion.div 
+                key="list"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-3"
+              >
               {participants.map((p) => (
                 <motion.div 
                   layout
@@ -805,11 +812,13 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
                   </Button>
                 </div>
               )}
-            </div>
+            </motion.div>
           ) : (
             <motion.div 
+              key="form"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
               className="space-y-8 p-2"
             >
               <div className="flex justify-between items-start">
@@ -905,9 +914,11 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
               </form>
             </motion.div>
           )}
+          </AnimatePresence>
         </div>
 
-        <div className="p-6 border-t border-white/5 bg-zinc-950 flex gap-3">
+        {!isAdding && (
+          <div className="p-6 border-t border-white/5 bg-zinc-950 flex gap-3">
           <Button 
             variant="primary" 
             className="flex-1 h-14 rounded-2xl shadow-lg shadow-blue-500/20 font-bold"
@@ -937,6 +948,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
             </AnimatePresence>
           </Button>
         </div>
+        )}
       </motion.aside>
 
       {/* Map Content */}
@@ -958,7 +970,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
         />
         
         {/* Top Floating Midpoint Banner */}
-        <div className="absolute top-16 left-1/2 z-30 pointer-events-none w-full max-w-md px-4 flex justify-center -translate-x-1/2">
+        <div className="absolute top-10 left-1/2 z-30 pointer-events-none w-full max-w-md px-4 flex justify-center -translate-x-1/2">
           <AnimatePresence>
             {finalMidpoint && (
               <motion.div 
