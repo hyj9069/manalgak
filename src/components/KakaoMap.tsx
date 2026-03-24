@@ -9,6 +9,7 @@ interface KakaoMapProps {
   midpoint?: { lat: number; lng: number } | null;
   recommendations?: Array<{ id: string; lat: number; lng: number; title?: string }>;
   onRecommendationClick?: (id: string) => void;
+  onMapClick?: () => void;
   selectedRecommendationId?: string | null;
   className?: string;
 }
@@ -20,6 +21,7 @@ export default function KakaoMap({
   midpoint = null, 
   recommendations = [], 
   onRecommendationClick,
+  onMapClick,
   selectedRecommendationId = null,
   className = "" 
 }: KakaoMapProps) {
@@ -51,6 +53,12 @@ export default function KakaoMap({
             level: level,
           };
           const newMap = new kakao.maps.Map(mapContainer.current, options);
+          newMap.setDraggable(true);
+          newMap.setZoomable(true);
+
+          kakao.maps.event.addListener(newMap, 'click', () => {
+            onMapClick?.();
+          });
           
           // Force relayout after a short delay to ensure dimensions are caught
           setTimeout(() => {
@@ -85,12 +93,20 @@ export default function KakaoMap({
 
   // Update center and handle layout shifts
   useEffect(() => {
-    if (!map || !window.kakao) return;
-    console.log('[KakaoMap] Updating center:', center);
-    const newCenter = new window.kakao.maps.LatLng(center.lat, center.lng);
-    map.relayout();
-    map.setCenter(newCenter);
-  }, [center, map]);
+    if (!map || !window.kakao || !mapContainer.current) return;
+    
+    // Observer for container size changes
+    const observer = new ResizeObserver(() => {
+      map.relayout();
+      if (center) {
+        const newCenter = new window.kakao.maps.LatLng(center.lat, center.lng);
+        map.setCenter(newCenter);
+      }
+    });
+
+    observer.observe(mapContainer.current);
+    return () => observer.disconnect();
+  }, [map, center]);
 
   // Update markers
   useEffect(() => {
@@ -179,7 +195,7 @@ export default function KakaoMap({
           transform: translateY(-47px);
           text-align: center;
         ">
-          만날각 발견!
+          만날각 발견 !
         </div>
       `;
 
@@ -244,8 +260,7 @@ export default function KakaoMap({
         recoActiveOverlayRef.current = recoOverlay;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (map as any).panTo(moveLatLon);
+      map.panTo(moveLatLon);
     }
   }, [map, selectedRecommendationId, recommendations]);
 
