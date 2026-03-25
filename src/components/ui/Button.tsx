@@ -10,7 +10,7 @@ interface ButtonProps extends HTMLMotionProps<'button'> {
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', type = 'button', ...props }, ref) => {
     const variants = {
       primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20',
       secondary: 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-500/20',
@@ -34,6 +34,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           sizes[size],
           className
         )}
+        type={type}
         {...props}
       />
     );

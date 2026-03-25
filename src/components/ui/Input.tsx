@@ -9,16 +9,18 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, ...props }, ref) => {
+  ({ className, label, error, id, ...props }, ref) => {
+    const inputId = id || (label ? `input-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined);
     return (
       <div className="w-full space-y-2">
         {label && (
-          <label className="text-sm font-bold opacity-70 ml-1">
+          <label htmlFor={inputId} className="text-sm font-bold opacity-70 ml-1">
             {label}
           </label>
         )}
         <input
           ref={ref}
+          id={inputId}
           className={cn(
             'w-full bg-foreground/[0.03] border-2 border-transparent rounded-2xl px-5 py-4 text-base outline-none transition-all placeholder:text-foreground/30 focus:border-blue-500/30 focus:bg-transparent',
             error && 'border-red-500/50 focus:border-red-500/50',

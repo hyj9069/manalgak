@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { MapPin, Users, Zap, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
+import HeroIllustration from '@/components/HeroIllustration';
 
 export default function Home() {
   return (
@@ -28,7 +28,7 @@ export default function Home() {
       </nav>
 
       <main className="max-w-6xl mx-auto px-6 pt-32 pb-20 relative z-10 transition-all min-h-screen">
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 py-12 md:py-24">
+        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20 py-0 md:py-24">
           <section className="flex-1 text-center lg:text-left space-y-12">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -38,7 +38,7 @@ export default function Home() {
               <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-[11px] font-black uppercase tracking-widest mb-8 border border-blue-200/50 dark:border-blue-800/50">
                 Fair Meeting Spot Recommender
               </span>
-              <h1 className="text-[3.5rem] md:text-[4.5rem] font-black tracking-tight leading-[1.2] mb-8 space-y-2">
+              <h1 className="text-[2.2rem] md:text-[4.5rem] font-black tracking-tight leading-[1.2] mb-8 space-y-2">
                 <span className="block opacity-90">우리 중간에서</span>
                 <span className="block py-1 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent transform hover:scale-105 transition-transform duration-500 origin-left">
                   &quot;만날각&quot;
@@ -67,28 +67,20 @@ export default function Home() {
             </motion.div>
           </section>
 
-          {/* Hero Illustration Section */}
+          {/* Hero Illustration Section - Hidden on Mobile (< 768px) */}
           <motion.section 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-            className="flex-1 relative w-full"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            className="flex-1 relative w-full hidden md:flex justify-center items-center"
           >
-            <div className="relative aspect-square md:aspect-[4/3] lg:aspect-square w-full rounded-[48px]">
-              {/* Floating Effect Background */}
-              <div className="absolute inset-0 bg-blue-500/5 rounded-[48px] blur-3xl animate-pulse" />
-              <Image 
-                src="/hero-img.png" 
-                alt="Manalgak Map" 
-                fill
-                className="object-contain relative z-10 drop-shadow-[0_20px_50px_rgba(0,113,227,0.15)]"
-                priority
-              />
+            <div className="relative w-full max-w-[500px]">
+              <HeroIllustration />
             </div>
           </motion.section>
         </div>
 
-        <section id="features" className="grid md:grid-cols-3 gap-8 py-20 border-t border-foreground/5 mt-10 scroll-mt-32">
+        <section id="features" className="grid md:grid-cols-3 gap-8 pt-10 pb-20 md:py-20 border-t border-foreground/5 mt-10 scroll-mt-32">
           <motion.div 
             whileHover={{ y: -8, scale: 1.01 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
@@ -128,10 +120,6 @@ export default function Home() {
             <p className="opacity-60 leading-relaxed font-semibold text-[15px] relative z-10">중간 지점 근처의 지하철역과 인기 있는 맛집 정보를 한눈에 보여드려요.</p>
           </motion.div>
         </section>
-
-        <footer className="py-10 text-center text-sm opacity-40 relative z-10">
-          © 2024 ManalGak. Built with Next.js & Tailwind CSS.
-        </footer>
       </main>
     </div>
   );

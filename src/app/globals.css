@@ -8,6 +8,13 @@ html, body {
 
 html {
   scroll-behavior: smooth;
+  font-size: 85%;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 100%;
+  }
 }
 
 @theme {

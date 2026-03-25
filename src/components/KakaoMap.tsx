@@ -134,6 +134,35 @@ function KakaoMap({
       marker.setMap(map);
       markersRef.current.push(marker);
       bounds.extend(position);
+
+      if (markerPos.title) {
+        const content = `
+          <div style="
+            background: white; 
+            color: #1c1c1e; 
+            border-radius: 40px; 
+            padding: 0px 12px;
+            border: 1.5px solid #0071e3;
+            font-size: 11px; 
+            font-weight: 700; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-30px);
+            white-space: nowrap;
+            text-align: center;
+          ">
+            ${markerPos.title}
+          </div>
+        `;
+
+        const overlay = new maps.CustomOverlay({
+          position: position,
+          content: content,
+          yAnchor: 1.5,
+          zIndex: 10
+        });
+        overlay.setMap(map);
+        overlaysRef.current.push(overlay);
+      }
     });
 
     // Recommendation markers
