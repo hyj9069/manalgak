@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface KakaoMapProps {
   center: { lat: number; lng: number };
@@ -14,7 +14,7 @@ interface KakaoMapProps {
   className?: string;
 }
 
-export default function KakaoMap({ 
+function KakaoMap({ 
   center, 
   level = 3, 
   markers = [], 
@@ -284,3 +284,5 @@ export default function KakaoMap({
     />
   );
 }
+
+export default React.memo(KakaoMap);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, use } from 'react';
+import { useState, useMemo, useEffect, use, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
@@ -98,6 +98,18 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
   const [hasActivatedRecommendations, setHasActivatedRecommendations] = useState(false);
   const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
 
+  // Helper for stable random-looking data based on ID
+  const getStableData = (id: string) => {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = ((hash << 5) - hash) + id.charCodeAt(i);
+      hash |= 0;
+    }
+    const rating = (4.0 + (Math.abs(hash % 10) / 10)).toFixed(1);
+    const reviews = (Math.abs(hash % 500) + 50);
+    return { rating, reviews };
+  };
+
   // Responsive state
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -106,6 +118,22 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
     window.addEventListener('resize', checkIsMobile);
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
+
+  // Memoized props for KakaoMap
+  const mapMarkers = useMemo(() => participants.map(p => ({
+    lat: p.coords.lat,
+    lng: p.coords.lng,
+    title: p.name
+  })), [participants]);
+
+  const mapRecommendations = useMemo(() => (
+    hasActivatedRecommendations 
+      ? (recoCategory === 'AI' ? aiRecommendations : recommendations) 
+      : []
+  ), [hasActivatedRecommendations, recoCategory, aiRecommendations, recommendations]);
+
+  const handleRecommendationClick = useCallback((id: string) => setSelectedRecoId(id), []);
+  const handleMapClick = useCallback(() => setShowRecommendations(false), []);
 
 
 
@@ -299,7 +327,7 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
         }
       }, options);
     });
-  }, [rawMidpoint]);
+  }, [rawMidpoint, nearestStation]);
 
   // 맛집 추천 기능 복구 및 강화
   useEffect(() => {
@@ -973,16 +1001,12 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
           className="absolute inset-0"
           center={finalMidpoint || { lat: 37.4979, lng: 127.0276 }} 
           level={3}
-          markers={participants.map(p => ({
-            lat: p.coords.lat,
-            lng: p.coords.lng,
-            title: p.name
-          }))}
+          markers={mapMarkers}
           midpoint={finalMidpoint}
-          recommendations={hasActivatedRecommendations ? (recoCategory === 'AI' ? aiRecommendations : recommendations) : []}
+          recommendations={mapRecommendations}
           selectedRecommendationId={selectedRecoId}
-          onRecommendationClick={(id) => setSelectedRecoId(id)}
-          onMapClick={() => setShowRecommendations(false)}
+          onRecommendationClick={handleRecommendationClick}
+          onMapClick={handleMapClick}
         />
         
         {/* Top Floating Midpoint Banner */}
@@ -1104,10 +1128,10 @@ export default function RoomPage({ params }: { params: Promise<{ id: string }> }
                         <div className="flex items-center gap-2 mb-3">
                           <div className="flex items-center text-amber-500">
                             <Star className="w-3.5 h-3.5 fill-current" />
-                            <span className="text-xs font-black ml-1">{(4.0 + Math.random() * 1.0).toFixed(1)}</span>
+                            <span className="text-xs font-black ml-1">{getStableData(reco.id).rating}</span>
                           </div>
                           <span className="text-[11px] font-bold opacity-30">|</span>
-                          <span className="text-[11px] font-bold opacity-40">리뷰 {Math.floor(Math.random() * 500) + 50}+</span>
+                          <span className="text-[11px] font-bold opacity-40">리뷰 {getStableData(reco.id).reviews}+</span>
                         </div>
                         <div className="text-[11px] font-medium opacity-40 truncate mb-4">{reco.address}</div>
                         <div className="flex items-center justify-between mt-auto">
