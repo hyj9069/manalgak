@@ -1,40 +1,39 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { supabase } from '@/lib/supabase';
+
+import { useRooms } from '@/hooks/useRooms';
+import { useUIStore } from '@/store/useUIStore';
 
 export default function CreatePage() {
   const router = useRouter();
-  const [meetingName, setMeetingName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { createRoomMutation } = useRooms();
+  const { tempMeetingName: meetingName, setTempMeetingName: setMeetingName } = useUIStore();
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!meetingName.trim()) return;
 
-    setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('rooms')
-        .insert([{ title: meetingName }])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await createRoomMutation.mutateAsync({ 
+        title: meetingName 
+      });
       
+      // Clear temporary state on success
+      setMeetingName('');
       router.push(`/room/${data.id}`);
     } catch (error) {
       console.error('Error creating room:', error);
       alert('모임 방 생성 중 오류가 발생했습니다.');
-      setIsLoading(false);
     }
   };
+
+  const isLoading = createRoomMutation.isPending;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">

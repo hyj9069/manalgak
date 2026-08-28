@@ -27,6 +27,8 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+import Providers from "@/components/Providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,7 +41,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <KakaoScript />
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
