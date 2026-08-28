@@ -38,7 +38,7 @@ export const useRoomStore = create<RoomState>((set) => ({
   aiRecommendations: [],
   recoCategory: 'FD6',
   selectedRecoId: null,
-  isSidebarCollapsed: false,
+  isSidebarCollapsed: true,
   isAdding: false,
 
   setParticipants: (participants) => set({ participants }),

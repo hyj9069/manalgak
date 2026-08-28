@@ -55,8 +55,11 @@ export default function RecommendationPanel({
 
   const currentRecos = recoCategory === 'AI' ? aiRecommendations : recommendations;
 
+  // 결과가 없고 AI 탭이 아닌 경우 패널 숨김
+  if (currentRecos.length === 0 && recoCategory !== 'AI') return null;
+
   return (
-    <motion.div 
+    <motion.div
       initial={false}
       animate={{ y: showRecommendations ? 0 : (typeof window !== 'undefined' && window.innerWidth < 768 ? 'calc(100% - 130px)' : 'calc(100% - 140px)') }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}

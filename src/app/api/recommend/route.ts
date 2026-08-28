@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       5. 검색어는 최대 2~3단어로 구성하세요.
     `;
 
-    const modelName = "models/gemini-1.5-flash";
+    const modelName = "models/gemini-1.5-flash-latest";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`;
 
     const requestBody = {

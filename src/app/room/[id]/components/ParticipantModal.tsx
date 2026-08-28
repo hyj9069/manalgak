@@ -153,7 +153,7 @@ export default function ParticipantModal({
               disabled={!newName.trim() || !newCoords}
               className="flex-2 h-16 rounded-[24px] font-black text-lg bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20 disabled:opacity-50"
             >
-              참여 완료
+              중간 지점 찾기
             </Button>
           </div>
         </form>

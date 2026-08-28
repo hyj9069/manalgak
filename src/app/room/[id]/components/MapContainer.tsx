@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { MapPin, Plus, Share2 } from 'lucide-react';
+import { Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import KakaoMap from '@/components/KakaoMap';
 import { useRoomStore } from '@/store/useRoomStore';
 import { Button } from '@/components/ui/Button';
@@ -21,14 +21,15 @@ export default function MapContainer({
   onAdd,
   isCopied 
 }: MapContainerProps) {
-  const { 
-    participants, 
-    recoCategory, 
-    recommendations, 
-    aiRecommendations, 
+  const {
+    participants,
+    recoCategory,
+    recommendations,
+    aiRecommendations,
     selectedRecoId,
     setSelectedRecoId,
-    setIsAdding 
+    isSidebarCollapsed,
+    setIsSidebarCollapsed,
   } = useRoomStore();
 
   const mapMarkers = useMemo(() => participants.map(p => ({
@@ -44,6 +45,7 @@ export default function MapContainer({
   const mapCenter = useMemo(() => rawMidpoint || { lat: 37.5665, lng: 126.9780 }, [rawMidpoint]);
   const handleRecoClick = useCallback((id: string) => setSelectedRecoId(id), [setSelectedRecoId]);
   const handleMapClick = useCallback(() => setSelectedRecoId(null), [setSelectedRecoId]);
+  const handleSidebarToggle = useCallback(() => setIsSidebarCollapsed(!isSidebarCollapsed), [isSidebarCollapsed, setIsSidebarCollapsed]);
 
   return (
     <div className="flex-1 relative h-full flex flex-col bg-zinc-50 dark:bg-zinc-900 transition-colors duration-500 overflow-hidden">
@@ -58,10 +60,22 @@ export default function MapContainer({
         onMapClick={handleMapClick}
       />
 
+      {/* Sidebar Toggle Button */}
+      <button
+        onClick={handleSidebarToggle}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-30 w-7 h-14 bg-white dark:bg-zinc-900 border border-l-0 border-zinc-200 dark:border-zinc-700 rounded-r-2xl shadow-md flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+        aria-label={isSidebarCollapsed ? '참여자 목록 열기' : '참여자 목록 닫기'}
+      >
+        {isSidebarCollapsed
+          ? <ChevronRight className="w-4 h-4 text-zinc-500" />
+          : <ChevronLeft className="w-4 h-4 text-zinc-500" />
+        }
+      </button>
+
       {/* Floating Action Buttons */}
       <div className="absolute top-6 right-6 z-20 flex flex-col gap-3">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-zinc-200 dark:border-zinc-800 shadow-xl rounded-2xl h-12 px-5 font-bold flex items-center gap-2 group"
           onClick={onShare}
         >
@@ -69,27 +83,6 @@ export default function MapContainer({
           <span className="text-zinc-900 dark:text-zinc-100">{isCopied ? '복사됨!' : '방 공유하기'}</span>
         </Button>
       </div>
-
-      {!finalMidpoint && participants.length > 0 && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center p-6 bg-zinc-950/20 backdrop-blur-[2px]">
-          <div className="bg-white/95 dark:bg-zinc-950/95 p-8 rounded-[40px] shadow-2xl border border-zinc-200 dark:border-zinc-800 text-center max-w-sm">
-             <div className="w-16 h-16 bg-blue-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <MapPin className="w-8 h-8 text-blue-500" />
-             </div>
-             <h2 className="text-xl font-black mb-3">중간 지점을 찾으시나요?</h2>
-             <p className="text-[14px] text-zinc-500 dark:text-zinc-400 font-medium mb-8 leading-relaxed">
-                2명 이상의 참여자가 있어야<br/>정확한 중간 지점 계산이 가능합니다.
-             </p>
-             <Button 
-                className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-500/20 text-lg group"
-                onClick={onAdd}
-             >
-                내 위치 추가하기
-                <Plus className="ml-2 w-5 h-5 group-hover:scale-110 transition-transform" />
-             </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

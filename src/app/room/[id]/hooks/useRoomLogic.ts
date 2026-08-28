@@ -44,7 +44,6 @@ export const useRoomLogic = (roomId: string) => {
   const [lastConfirmedLocation, setLastConfirmedLocation] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
-  const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
 
   // 1. 초기 데이터 페치 및 실시간 구독
   useEffect(() => {
@@ -155,13 +154,13 @@ export const useRoomLogic = (roomId: string) => {
 
   const finalMidpoint = nearestStation || rawMidpoint;
 
-  // Sidebar auto-collapse
+  // 추천 결과 도착 시 패널 자동 표시
   useEffect(() => {
-    if (finalMidpoint && !hasAutoCollapsed && !isSidebarCollapsed && typeof window !== 'undefined' && window.innerWidth >= 768) {
-      setIsSidebarCollapsed(true);
-      setHasAutoCollapsed(true);
+    if (recommendations.length > 0) {
+      setShowRecommendations(true);
     }
-  }, [finalMidpoint, hasAutoCollapsed, isSidebarCollapsed, setIsSidebarCollapsed]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recommendations.length]);
 
   // Kakao Station Search
   useEffect(() => {
