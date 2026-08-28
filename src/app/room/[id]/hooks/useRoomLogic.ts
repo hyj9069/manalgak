@@ -90,7 +90,8 @@ export const useRoomLogic = (roomId: string) => {
       }, (payload) => {
         if (payload.eventType === 'INSERT') {
           const newP = payload.new;
-          setParticipants([...participants, {
+          const { participants: cur } = useRoomStore.getState();
+          setParticipants([...cur, {
             id: newP.id,
             name: newP.name,
             location: newP.location,
@@ -98,14 +99,16 @@ export const useRoomLogic = (roomId: string) => {
           }]);
         } else if (payload.eventType === 'UPDATE') {
           const updatedP = payload.new;
-          setParticipants(participants.map(p => p.id === updatedP.id ? {
+          const { participants: cur } = useRoomStore.getState();
+          setParticipants(cur.map(p => p.id === updatedP.id ? {
             id: updatedP.id,
             name: updatedP.name,
             location: updatedP.location,
             coords: { lat: updatedP.lat, lng: updatedP.lng }
           } : p));
         } else if (payload.eventType === 'DELETE') {
-          setParticipants(participants.filter(p => p.id !== payload.old.id));
+          const { participants: cur } = useRoomStore.getState();
+          setParticipants(cur.filter(p => p.id !== payload.old.id));
         }
       })
       .on('presence', { event: 'sync' }, () => {
@@ -128,7 +131,8 @@ export const useRoomLogic = (roomId: string) => {
     return () => {
       supabase.removeChannel(participantsChannel);
     };
-  }, [roomId, setParticipants, setOnlineParticipants, setRoomTitle, setMyParticipantId, participants]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId]);
 
   // Midpoint calculation
   const rawMidpoint = useMemo(() => {
@@ -170,7 +174,8 @@ export const useRoomLogic = (roomId: string) => {
         radius: 5000,
         sort: window.kakao.maps.services.SortBy.DISTANCE
       };
-      ps.categorySearch('SW8', (data, status) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ps.categorySearch('SW8', (data: any[], status: string) => {
         if (status === window.kakao.maps.services.Status.OK && data.length > 0) {
           const station = data[0];
           const cleanName = station.place_name.replace(/\s*역(\([^)]*\))?$/, '');
@@ -181,6 +186,46 @@ export const useRoomLogic = (roomId: string) => {
       }, options);
     });
   }, [rawMidpoint, nearestStation, setNearestStation]);
+
+  // Fetch recommendations (FD6/CE7/술집) when midpoint or category changes
+  useEffect(() => {
+    if (!finalMidpoint || recoCategory === 'AI') return;
+
+    const fetch = () => {
+      if (!window.kakao?.maps?.services) return;
+      const ps = new window.kakao.maps.services.Places();
+      const options = {
+        location: new window.kakao.maps.LatLng(finalMidpoint.lat, finalMidpoint.lng),
+        radius: 2000,
+        sort: window.kakao.maps.services.SortBy.DISTANCE
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const handleResults = (data: any[], status: string) => {
+        if (status === window.kakao.maps.services.Status.OK) {
+          setRecommendations(data.slice(0, 10).map(item => ({
+            id: item.id,
+            name: item.place_name,
+            title: item.place_name,
+            category: item.category_group_name,
+            address: item.road_address_name || item.address_name,
+            lat: parseFloat(item.y),
+            lng: parseFloat(item.x),
+            url: item.place_url,
+            distance: item.distance
+          })));
+        }
+      };
+      if (recoCategory === '술집') {
+        ps.keywordSearch('술집', handleResults, options);
+      } else {
+        ps.categorySearch(recoCategory, handleResults, options);
+      }
+    };
+
+    if (window.kakao?.maps) {
+      window.kakao.maps.load(fetch);
+    }
+  }, [finalMidpoint, recoCategory, setRecommendations]);
 
   const handleShare = async () => {
     try {
@@ -219,13 +264,15 @@ export const useRoomLogic = (roomId: string) => {
     setIsSearching(true);
     const geocoder = new window.kakao.maps.services.Geocoder();
     const ps = new window.kakao.maps.services.Places();
-    geocoder.addressSearch(newLocation, (result, status) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    geocoder.addressSearch(newLocation, (result: any[], status: string) => {
       if (status === window.kakao.maps.services.Status.OK) {
         const loc = result[0].road_address?.address_name || result[0].address_name;
         setNewCoords({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) });
         setNewLocation(loc); setLastConfirmedLocation(loc); setIsSearching(false);
       } else {
-        ps.keywordSearch(newLocation, (data, psStatus) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ps.keywordSearch(newLocation, (data: any[], psStatus: string) => {
           if (psStatus === window.kakao.maps.services.Status.OK) {
             const loc = data[0].place_name + " (" + (data[0].road_address_name || data[0].address_name) + ")";
             setNewCoords({ lat: parseFloat(data[0].y), lng: parseFloat(data[0].x) });
@@ -265,7 +312,8 @@ export const useRoomLogic = (roomId: string) => {
       if (data.keywords) {
         setRecoCategory('AI');
         const ps = new window.kakao.maps.services.Places();
-        ps.keywordSearch(data.keywords, (places, status) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ps.keywordSearch(data.keywords, (places: any[], status: string) => {
           if (status === window.kakao.maps.services.Status.OK) {
             setAiRecommendations(places.slice(0, 10).map(item => ({
               id: item.id, name: item.place_name, title: item.place_name, category: item.category_group_name,

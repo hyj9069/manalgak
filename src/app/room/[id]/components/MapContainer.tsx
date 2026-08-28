@@ -49,7 +49,7 @@ export default function MapContainer({
         markers={mapMarkers}
         midpoint={finalMidpoint}
         recommendations={mapRecommendations}
-        selectedRecoId={selectedRecoId}
+        selectedRecommendationId={selectedRecoId}
         onRecommendationClick={(id) => setSelectedRecoId(id)}
         onMapClick={() => setSelectedRecoId(null)}
       />

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Zap, ChevronUp, ChevronDown, MessageCircleMore, Check, X } from 'lucide-react';
+import { Star, Zap, ChevronUp, ChevronDown, MessageCircleMore, Check, X, MapPin } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { FreeMode } from 'swiper/modules';
 import 'swiper/css';
