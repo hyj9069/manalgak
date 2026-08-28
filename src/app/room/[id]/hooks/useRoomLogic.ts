@@ -311,15 +311,22 @@ export const useRoomLogic = (roomId: string) => {
       }
       if (data.keywords) {
         setRecoCategory('AI');
+        if (!window.kakao?.maps?.services) {
+          setAiError("카카오 지도 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+          setIsAiLoading(false);
+          return;
+        }
         const ps = new window.kakao.maps.services.Places();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ps.keywordSearch(data.keywords, (places: any[], status: string) => {
-          if (status === window.kakao.maps.services.Status.OK) {
+          if (status === window.kakao.maps.services.Status.OK && places.length > 0) {
             setAiRecommendations(places.slice(0, 10).map(item => ({
               id: item.id, name: item.place_name, title: item.place_name, category: item.category_group_name,
               address: item.road_address_name || item.address_name, lat: parseFloat(item.y), lng: parseFloat(item.x),
               url: item.place_url, distance: item.distance
             })));
+          } else {
+            setAiError(`'${data.keywords}' 근처에 검색 결과가 없습니다.`);
           }
           setIsAiLoading(false);
         }, { location: new window.kakao.maps.LatLng(rawMidpoint.lat, rawMidpoint.lng), radius: 2000 });

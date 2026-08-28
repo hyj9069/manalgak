@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { MapPin, Plus, Share2 } from 'lucide-react';
 import KakaoMap from '@/components/KakaoMap';
 import { useRoomStore } from '@/store/useRoomStore';
@@ -41,17 +41,21 @@ export default function MapContainer({
     recoCategory === 'AI' ? aiRecommendations : recommendations
   ), [recoCategory, aiRecommendations, recommendations]);
 
+  const mapCenter = useMemo(() => rawMidpoint || { lat: 37.5665, lng: 126.9780 }, [rawMidpoint]);
+  const handleRecoClick = useCallback((id: string) => setSelectedRecoId(id), [setSelectedRecoId]);
+  const handleMapClick = useCallback(() => setSelectedRecoId(null), [setSelectedRecoId]);
+
   return (
     <div className="flex-1 relative h-full flex flex-col bg-zinc-50 dark:bg-zinc-900 transition-colors duration-500 overflow-hidden">
-      <KakaoMap 
-        center={rawMidpoint || { lat: 37.5665, lng: 126.9780 }} 
+      <KakaoMap
+        center={mapCenter}
         level={7}
         markers={mapMarkers}
         midpoint={finalMidpoint}
         recommendations={mapRecommendations}
         selectedRecommendationId={selectedRecoId}
-        onRecommendationClick={(id) => setSelectedRecoId(id)}
-        onMapClick={() => setSelectedRecoId(null)}
+        onRecommendationClick={handleRecoClick}
+        onMapClick={handleMapClick}
       />
 
       {/* Floating Action Buttons */}
